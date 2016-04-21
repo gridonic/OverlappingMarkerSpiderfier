@@ -36,7 +36,9 @@ class @['OverlappingMarkerSpiderfier']
   p['usualLegZIndex'] = 10           # for legs
   p['highlightedLegZIndex'] = 20     # ensure highlighted leg is always on top
   p['event'] = 'click'               # Event to use when we want to trigger spiderify
+
   p['minZoomLevel'] = no             # Minimum zoom level necessary to trigger spiderify
+  p['spiderfication'] = yes          # When the spiderfication is set to no, we do not spiderfy
 
   p['legWeight'] = 1.5
   p['legColors'] =
@@ -150,7 +152,7 @@ class @['OverlappingMarkerSpiderfier']
 
     # Don't spiderfy in Street View or GE Plugin; or when the zoom level is below the minimal zoom level
     isNotMinZoomLevel = @['minZoomLevel'] and @map.getZoom() < @['minZoomLevel']
-    if markerSpiderfied or @map.getStreetView().getVisible() or @map.getMapTypeId() is 'GoogleEarthAPI' or isNotMinZoomLevel
+    if markerSpiderfied or @map.getStreetView().getVisible() or @map.getMapTypeId() is 'GoogleEarthAPI' or isNotMinZoomLevel or @['spiderfication'] is no
       @trigger('click', marker, event)
     else
       nearbyMarkerData = []
@@ -205,6 +207,9 @@ class @['OverlappingMarkerSpiderfier']
           m1Data.willSpiderfy = m2Data.willSpiderfy = yes
           break
     m for m, i in @markers when mData[i].willSpiderfy
+
+  p['setSpiderfication'] = (disable = no) ->
+    @['spiderfication'] = disable
 
   p.makeHighlightListenerFuncs = (marker) ->
     highlight:

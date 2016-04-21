@@ -57,6 +57,8 @@ this['OverlappingMarkerSpiderfier'] = (function() {
 
   p['minZoomLevel'] = false;
 
+  p['spiderfication'] = true;
+
   p['legWeight'] = 1.5;
 
   p['legColors'] = {
@@ -259,7 +261,7 @@ this['OverlappingMarkerSpiderfier'] = (function() {
       }
     }
     isNotMinZoomLevel = this['minZoomLevel'] && this.map.getZoom() < this['minZoomLevel'];
-    if (markerSpiderfied || this.map.getStreetView().getVisible() || this.map.getMapTypeId() === 'GoogleEarthAPI' || isNotMinZoomLevel) {
+    if (markerSpiderfied || this.map.getStreetView().getVisible() || this.map.getMapTypeId() === 'GoogleEarthAPI' || isNotMinZoomLevel || this['spiderfication'] === false) {
       return this.trigger('click', marker, event);
     } else {
       nearbyMarkerData = [];
@@ -378,6 +380,13 @@ this['OverlappingMarkerSpiderfier'] = (function() {
       }
     }
     return _results;
+  };
+
+  p['setSpiderfication'] = function(disable) {
+    if (disable == null) {
+      disable = false;
+    }
+    return this['spiderfication'] = disable;
   };
 
   p.makeHighlightListenerFuncs = function(marker) {
