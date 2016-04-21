@@ -244,7 +244,7 @@ this['OverlappingMarkerSpiderfier'] = (function() {
   };
 
   p.spiderListener = function(marker, event) {
-    var $this, clear, m, mPt, markerPt, markerSpiderfied, nDist, nearbyMarkerData, nonNearbyMarkers, pxSq, _j, _len1, _ref1;
+    var $this, clear, isNotMinZoomLevel, m, mPt, markerPt, markerSpiderfied, nDist, nearbyMarkerData, nonNearbyMarkers, pxSq, _j, _len1, _ref1;
     markerSpiderfied = marker['_omsData'] != null;
     if (!(markerSpiderfied && this['keepSpiderfied'])) {
       if (this['event'] === 'mouseover') {
@@ -258,7 +258,8 @@ this['OverlappingMarkerSpiderfier'] = (function() {
         this['unspiderfy']();
       }
     }
-    if (markerSpiderfied || this.map.getStreetView().getVisible() || this.map.getMapTypeId() === 'GoogleEarthAPI') {
+    isNotMinZoomLevel = this['minZoomLevel'] && this.map.getZoom() < this['minZoomLevel'];
+    if (markerSpiderfied || this.map.getStreetView().getVisible() || this.map.getMapTypeId() === 'GoogleEarthAPI' || isNotMinZoomLevel) {
       return this.trigger('click', marker, event);
     } else {
       nearbyMarkerData = [];
@@ -402,9 +403,6 @@ this['OverlappingMarkerSpiderfier'] = (function() {
 
   p.spiderfy = function(markerData, nonNearbyMarkers) {
     var bodyPt, footLl, footPt, footPts, highlightListenerFuncs, leg, marker, md, nearestMarkerDatum, numFeet, spiderfiedMarkers;
-    if (this['minZoomLevel'] && this.map.getZoom() < this['minZoomLevel']) {
-      return false;
-    }
     this.spiderfying = true;
     numFeet = markerData.length;
     bodyPt = this.ptAverage((function() {

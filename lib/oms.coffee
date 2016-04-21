@@ -12,18 +12,18 @@ Note: The Google Maps API v3 must be included *before* this code
 class @['OverlappingMarkerSpiderfier']
   p = @::  # this saves a lot of repetition of .prototype that isn't optimized away
   x['VERSION'] = '0.3.3' for x in [@, p]  # better on @, but defined on p too for backward-compat
-  
+
   gm = google.maps
   ge = gm.event
   mt = gm.MapTypeId
   twoPi = Math.PI * 2
-  
+
   p['keepSpiderfied']  = no          # yes -> don't unspiderfy when a marker is selected
   p['markersWontHide'] = no          # yes -> a promise you won't hide markers, so we needn't check
   p['markersWontMove'] = no          # yes -> a promise you won't move markers, so we needn't check
 
   p['nearbyDistance'] = 20           # spiderfy markers within this range of the one clicked, in px
-  
+
   p['circleSpiralSwitchover'] = 9    # show spiral instead of circle from this marker count upwards
                                      # 0 -> always spiral; Infinity -> always circle
   p['circleFootSeparation'] = 23     # related to circumference of circle
@@ -31,26 +31,26 @@ class @['OverlappingMarkerSpiderfier']
   p['spiralFootSeparation'] = 26     # related to size of spiral (experiment!)
   p['spiralLengthStart'] = 11        # ditto
   p['spiralLengthFactor'] = 4        # ditto
-  
+
   p['spiderfiedZIndex'] = 1000       # ensure spiderfied markers are on top
   p['usualLegZIndex'] = 10           # for legs
   p['highlightedLegZIndex'] = 20     # ensure highlighted leg is always on top
   p['event'] = 'click'               # Event to use when we want to trigger spiderify
   p['minZoomLevel'] = no             # Minimum zoom level necessary to trigger spiderify
-  
+
   p['legWeight'] = 1.5
   p['legColors'] =
     'usual': {}
     'highlighted': {}
-  
+
   lcU = p['legColors']['usual']
   lcH = p['legColors']['highlighted']
   lcU[mt.HYBRID]  = lcU[mt.SATELLITE] = '#fff'
   lcH[mt.HYBRID]  = lcH[mt.SATELLITE] = '#f00'
   lcU[mt.TERRAIN] = lcU[mt.ROADMAP]   = '#444'
   lcH[mt.TERRAIN] = lcH[mt.ROADMAP]   = '#f00'
-  
-  # Note: it's OK that this constructor comes after the properties, because a function defined by a 
+
+  # Note: it's OK that this constructor comes after the properties, because a function defined by a
   # function declaration can be used before the function declaration itself
   constructor: (@map, opts = {}) ->
     (@[k] = v) for own k, v of opts
@@ -59,11 +59,11 @@ class @['OverlappingMarkerSpiderfier']
     @listeners = {}
     for e in ['click', 'zoom_changed', 'maptypeid_changed']
       ge.addListener(@map, e, => @['unspiderfy']())
-    
+
   p.initMarkerArrays = ->
     @markers = []
     @markerListenerRefs = []
-    
+
   p['addMarker'] = (marker) ->
     return @ if marker['_oms']?
     marker['_oms'] = yes
@@ -79,7 +79,7 @@ class @['OverlappingMarkerSpiderfier']
   p.markerChangeListener = (marker, positionChanged) ->
     if marker['_omsData']? and (positionChanged or not marker.getVisible()) and not (@spiderfying? or @unspiderfying?)
       @['unspiderfy'](if positionChanged then marker else null)
-      
+
   p['getMarkers'] = -> @markers[0..]  # returns a copy, so no funny business
 
   p['removeMarker'] = (marker) ->
@@ -91,7 +91,7 @@ class @['OverlappingMarkerSpiderfier']
     delete marker['_oms']
     @markers.splice(i, 1)
     @  # return self, for chaining
-    
+
   p['clearMarkers'] = ->
     @['unspiderfy']()
     for marker, i in @markers
@@ -100,43 +100,43 @@ class @['OverlappingMarkerSpiderfier']
       delete marker['_oms']
     @initMarkerArrays()
     @  # return self, for chaining
-        
+
   # available listeners: click(marker), spiderfy(markers), unspiderfy(markers)
   p['addListener'] = (event, func) ->
     (@listeners[event] ?= []).push(func)
     @  # return self, for chaining
-    
+
   p['removeListener'] = (event, func) ->
     i = @arrIndexOf(@listeners[event], func)
     @listeners[event].splice(i, 1) unless i < 0
     @  # return self, for chaining
-  
+
   p['clearListeners'] = (event) ->
     @listeners[event] = []
     @  # return self, for chaining
-  
+
   p.trigger = (event, args...) ->
     func(args...) for func in (@listeners[event] ? [])
-  
+
   p.generatePtsCircle = (count, centerPt) ->
     circumference = @['circleFootSeparation'] * (2 + count)
     legLength = circumference / twoPi  # = radius from circumference
     angleStep = twoPi / count
     for i in [0...count]
       angle = @['circleStartAngle'] + i * angleStep
-      new gm.Point(centerPt.x + legLength * Math.cos(angle), 
+      new gm.Point(centerPt.x + legLength * Math.cos(angle),
                    centerPt.y + legLength * Math.sin(angle))
-  
+
   p.generatePtsSpiral = (count, centerPt) ->
     legLength = @['spiralLengthStart']
     angle = 0
     for i in [0...count]
       angle += @['spiralFootSeparation'] / legLength + i * 0.0005
-      pt = new gm.Point(centerPt.x + legLength * Math.cos(angle), 
+      pt = new gm.Point(centerPt.x + legLength * Math.cos(angle),
                         centerPt.y + legLength * Math.sin(angle))
       legLength += twoPi * @['spiralLengthFactor'] / angle
       pt
-  
+
   p.spiderListener = (marker, event) ->
     markerSpiderfied = marker['_omsData']?
     unless markerSpiderfied and @['keepSpiderfied']
@@ -147,7 +147,10 @@ class @['OverlappingMarkerSpiderfier']
         p.timeout = setTimeout clear, 3000
       else
         @['unspiderfy']()
-    if markerSpiderfied or @map.getStreetView().getVisible() or @map.getMapTypeId() is 'GoogleEarthAPI'  # don't spiderfy in Street View or GE Plugin!
+
+    # Don't spiderfy in Street View or GE Plugin; or when the zoom level is below the minimal zoom level
+    isNotMinZoomLevel = @['minZoomLevel'] and @map.getZoom() < @['minZoomLevel']
+    if markerSpiderfied or @map.getStreetView().getVisible() or @map.getMapTypeId() is 'GoogleEarthAPI' or isNotMinZoomLevel
       @trigger('click', marker, event)
     else
       nearbyMarkerData = []
@@ -166,7 +169,7 @@ class @['OverlappingMarkerSpiderfier']
         @trigger('click', marker, event)
       else
         @spiderfy(nearbyMarkerData, nonNearbyMarkers)
-  
+
   p['markersNearMarker'] = (marker, firstOnly = no) ->
     unless @projHelper.getProjection()?
       throw "Must wait for 'idle' event on map before calling markersNearMarker"
@@ -181,7 +184,7 @@ class @['OverlappingMarkerSpiderfier']
         markers.push(m)
         break if firstOnly
     markers
-  
+
   p['markersNearAnyOtherMarker'] = ->  # *very* much quicker than calling markersNearMarker in a loop
     unless @projHelper.getProjection()?
       throw "Must wait for 'idle' event on map before calling markersNearAnyOtherMarker"
@@ -202,25 +205,22 @@ class @['OverlappingMarkerSpiderfier']
           m1Data.willSpiderfy = m2Data.willSpiderfy = yes
           break
     m for m, i in @markers when mData[i].willSpiderfy
-  
+
   p.makeHighlightListenerFuncs = (marker) ->
-    highlight: 
+    highlight:
       => marker['_omsData'].leg.setOptions
         strokeColor: @['legColors']['highlighted'][@map.mapTypeId]
         zIndex: @['highlightedLegZIndex']
-    unhighlight: 
+    unhighlight:
       => marker['_omsData'].leg.setOptions
         strokeColor: @['legColors']['usual'][@map.mapTypeId]
         zIndex: @['usualLegZIndex']
-  
-  p.spiderfy = (markerData, nonNearbyMarkers) ->
-    if @['minZoomLevel'] and @map.getZoom() < @['minZoomLevel']
-      return no
 
+  p.spiderfy = (markerData, nonNearbyMarkers) ->
     @spiderfying = yes
     numFeet = markerData.length
     bodyPt = @ptAverage(md.markerPt for md in markerData)
-    footPts = if numFeet >= @['circleSpiralSwitchover'] 
+    footPts = if numFeet >= @['circleSpiralSwitchover']
       @generatePtsSpiral(numFeet, bodyPt).reverse()  # match from outside in => less criss-crossing
     else
       @generatePtsCircle(numFeet, bodyPt)
@@ -234,7 +234,7 @@ class @['OverlappingMarkerSpiderfier']
         strokeColor: @['legColors']['usual'][@map.mapTypeId]
         strokeWeight: @['legWeight']
         zIndex: @['usualLegZIndex']
-      marker['_omsData'] = 
+      marker['_omsData'] =
         usualPosition: marker.position
         leg: leg
       unless @['legColors']['highlighted'][@map.mapTypeId] is
@@ -249,7 +249,7 @@ class @['OverlappingMarkerSpiderfier']
     delete @spiderfying
     @spiderfied = yes
     @trigger('spiderfy', spiderfiedMarkers, nonNearbyMarkers)
-  
+
   p['unspiderfy'] = (markerNotToMove = null) ->
     return @ unless @spiderfied?
     @unspiderfying = yes
@@ -272,22 +272,22 @@ class @['OverlappingMarkerSpiderfier']
     delete @spiderfied
     @trigger('unspiderfy', unspiderfiedMarkers, nonNearbyMarkers)
     @  # return self, for chaining
-  
-  p.ptDistanceSq = (pt1, pt2) -> 
+
+  p.ptDistanceSq = (pt1, pt2) ->
     dx = pt1.x - pt2.x
     dy = pt1.y - pt2.y
     dx * dx + dy * dy
-  
+
   p.ptAverage = (pts) ->
     sumX = sumY = 0
     for pt in pts
       sumX += pt.x; sumY += pt.y
     numPts = pts.length
     new gm.Point(sumX / numPts, sumY / numPts)
-  
+
   p.llToPt = (ll) -> @projHelper.getProjection().fromLatLngToDivPixel(ll)
   p.ptToLl = (pt) -> @projHelper.getProjection().fromDivPixelToLatLng(pt)
-  
+
   p.minExtract = (set, func) ->  # destructive! returns minimum, and also removes it from the set
     for item, index in set
       val = func(item)
@@ -295,12 +295,12 @@ class @['OverlappingMarkerSpiderfier']
         bestVal = val
         bestIndex = index
     set.splice(bestIndex, 1)[0]
-    
-  p.arrIndexOf = (arr, obj) -> 
+
+  p.arrIndexOf = (arr, obj) ->
     return arr.indexOf(obj) if arr.indexOf?
     (return i if o is obj) for o, i in arr
     -1
-  
+
   # the ProjHelper object is just used to get the map's projection
   @ProjHelper = (map) -> @setMap(map)
   @ProjHelper:: = new gm.OverlayView()
