@@ -122,6 +122,15 @@ This is the lowest number of markers that will be fanned out into a spiral inste
 
 This determines the thickness of the lines joining spiderfied markers to their original locations.
 
+**minZoomLevel** (default: `false`)
+
+Sets the minimum zoom level needed to enable spiderfying markers. If the map zoom level is higher than this value, markers normally spiderfied
+will remain unspiderfied. Clicking on markers still works however.
+
+**spiderfication** (default: `true`)
+
+Enables or disables the spiderfication. If disabled (set to `false`), markers won't be spiderfied when a marker in a normally spiderfied group is clicked.
+
 ### Instance methods: managing markers
 
 Note: methods that have no obvious return value return the OverlappingMarkerSpiderfier instance they were called on, in case you want to chain method calls.
@@ -189,6 +198,11 @@ This method is several orders of magnitude faster than looping over all markers 
 The return value of this method may change any time the zoom level changes, and when any marker is added, moved, hidden or removed. Hence you'll very likely want call it (and take appropriate action) every time the map's `zoom_changed` event fires *and* any time you add, move, hide or remove a marker.
 
 Note also that this method relies on the map's `Projection` object being available, and thus cannot be called until the map's first `idle` event fires.
+
+**setSpiderfication(enable)**
+
+This sets the `spiderfication` object variable to the value of `enable`. If disabled (set to `false`), markers won't be spiderfied
+when a marker in a normally spiderfied group is clicked.
 
 ### Properties
 

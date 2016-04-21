@@ -208,8 +208,8 @@ class @['OverlappingMarkerSpiderfier']
           break
     m for m, i in @markers when mData[i].willSpiderfy
 
-  p['setSpiderfication'] = (disable = no) ->
-    @['spiderfication'] = disable
+  p['setSpiderfication'] = (enable = yes) ->
+    @['spiderfication'] = enable
 
   p.makeHighlightListenerFuncs = (marker) ->
     highlight:
